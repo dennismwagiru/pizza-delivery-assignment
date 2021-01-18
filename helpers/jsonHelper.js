@@ -1,12 +1,12 @@
 /*
- * @created 18/01/2021 - 10:52 PM
+ * @created 19/01/2021 - 2:05 AM
  * @project two
  * @author  dennis joel
 */
 
-const helpers = {};
+const helper = {};
 
-helpers.parseJsonObject = (str) => {
+helper.parseJsonObject = (str) => {
     try {
         return JSON.parse(str);
     } catch (e) {
@@ -15,4 +15,4 @@ helpers.parseJsonObject = (str) => {
 }
 
 
-module.exports = helpers;
+module.exports = helper;
