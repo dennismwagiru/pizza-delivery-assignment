@@ -1,27 +1,26 @@
 /*
- * @created 19/01/2021 - 2:06 AM
+ * @created 21/01/2021 - 8:30 PM
  * @project two
  * @author  dennis joel
 */
 
-helper = {};
+// Dependencies
+const _validator = require('../lib/validator');
 
-/**
- * Rule Structure
- * {
- *     key: string,
- *     required: boolean
- *     type: string
- * }
- */
+const helper = {};
 
-/**
- *
- * @param {array} rules
- * @param {object} body
- */
-helper.validate = (rules, body) => {
-
+helper.validate = (rules, body, callback) => {
+    const errors = [];
+    for (let attr in rules) {
+        const attrRules = rules[attr];
+        const inputValue = body.hasOwnProperty(attr) ? body[attr] : null;
+        attrRules.forEach(rule => {
+            _validator._rules[rule](attr, inputValue, (err) => {
+                if (err) errors.push(err);
+            });
+        });
+    }
+    callback(errors.length > 0 ? errors : false);
 }
 
 module.exports = helper;

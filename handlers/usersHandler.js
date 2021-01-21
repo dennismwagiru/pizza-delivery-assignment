@@ -4,25 +4,36 @@
  * @author  dennis joel
 */
 
+// Dependencies
+const validationHelper = require('../helpers/validationHelper');
+
 const handler = {};
 
-handler.init = request => {
-    return new Promise((resolve, reject) => {
-        const acceptableMethods = ['post', 'get', 'put', 'delete'];
-        if (acceptableMethods.indexOf(request.method) > -1) {
-            resolve(handler[request.method](request));
-        } else {
-            reject(405);
-        }
-    });
+handler.init = (request, callback) => {
+    const acceptableMethods = ['post', 'get', 'put', 'delete'];
+    if (acceptableMethods.indexOf(request.method) > -1) {
+        handler[request.method](request, callback)
+    } else {
+        callback(405, 'Method not allowed');
+    }
 }
 
 // Users - post
 // Required fields: name, email, streetAddress, password
 // Optional fields: none
-handler.post = request => {
-    return new Promise((resolve, reject) => {
-        resolve(200);
+handler.post = (request, callback) => {
+    const rules = {
+        name: ['required'],
+        email: ['required','email'],
+        address: ['required'],
+        password: ['required']
+    };
+    validationHelper.validate(rules, request.payload, (err) => {
+        if (!err) {
+            callback(200);
+        } else {
+            callback(400, {errors: err});
+        }
     });
 };
 
@@ -30,8 +41,15 @@ handler.post = request => {
 // Required fields: email
 // Optional data: none
 handler.get = request => {
-    return new Promise((resolve, reject) => {
-        resolve(200);
+    const rules = {
+        email: ['required','email'],
+    };
+    validationHelper.validate(rules, request.payload, (err) => {
+        if (!err) {
+            callback(200);
+        } else {
+            callback(400, {errors: err});
+        }
     });
 };
 
@@ -39,8 +57,15 @@ handler.get = request => {
 // Required fields: email
 // Optional fields: none
 handler.put = request => {
-    return new Promise((resolve, reject) => {
-        resolve(200);
+    const rules = {
+        email: ['required','email'],
+    };
+    validationHelper.validate(rules, request.payload, (err) => {
+        if (!err) {
+            callback(200);
+        } else {
+            callback(400, {errors: err});
+        }
     });
 };
 
@@ -48,8 +73,15 @@ handler.put = request => {
 // Required fields: email
 // Optional fields: none
 handler.delete = request => {
-    return new Promise((resolve, reject) => {
-        resolve(200);
+    const rules = {
+        email: ['required','email'],
+    };
+    validationHelper.validate(rules, request.payload, (err) => {
+        if (!err) {
+            callback(200);
+        } else {
+            callback(400, {errors: err});
+        }
     });
 };
 
