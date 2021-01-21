@@ -5,7 +5,9 @@
 */
 
 // Dependencies
+const appHelper = require('../helpers/appHelper');
 const validationHelper = require('../helpers/validationHelper');
+const _data = require('../lib/data');
 
 const handler = {};
 
@@ -22,15 +24,27 @@ handler.init = (request, callback) => {
 // Required fields: name, email, streetAddress, password
 // Optional fields: none
 handler.post = (request, callback) => {
+    const payload = request.payload;
     const rules = {
         name: ['required'],
         email: ['required','email'],
         address: ['required'],
         password: ['required']
     };
-    validationHelper.validate(rules, request.payload, (err) => {
+    validationHelper.validate(rules, payload, (err) => {
         if (!err) {
-            callback(200);
+            const hashedPassword = appHelper.hash(payload.password);
+            const userObject = {
+                'name': payload.name,
+                'email': payload.email,
+                'address': payload.address,
+                'password': hashedPassword
+            };
+
+            // Store the user
+            _data.create('users', payload.email, userObject).then(() => {
+                callback(200);
+            }, () => callback(500, {'Error': 'A user with that email already exists'}));
         } else {
             callback(400, {errors: err});
         }
@@ -40,13 +54,19 @@ handler.post = (request, callback) => {
 // Users - get
 // Required fields: email
 // Optional data: none
-handler.get = request => {
+// TODO verify token
+handler.get = (request, callback) => {
     const rules = {
         email: ['required','email'],
     };
-    validationHelper.validate(rules, request.payload, (err) => {
+    validationHelper.validate(rules, request.queryString, (err) => {
         if (!err) {
-            callback(200);
+            _data.read('users', request.queryString.email).then(data => {
+                delete data.password;
+                callback(200, data);
+            }, err => {
+                callback(404);
+            })
         } else {
             callback(400, {errors: err});
         }
@@ -72,13 +92,18 @@ handler.put = request => {
 // Users - delete
 // Required fields: email
 // Optional fields: none
-handler.delete = request => {
+// TODO verify token
+handler.delete = (request, callback) => {
     const rules = {
         email: ['required','email'],
     };
-    validationHelper.validate(rules, request.payload, (err) => {
+    validationHelper.validate(rules, request.queryString, (err) => {
         if (!err) {
-            callback(200);
+            _data.delete('users', request.queryString.email).then(res => {
+                callback(200);
+            }, err => {
+                callback(400, {'Error':'Could not find the specified user'});
+            })
         } else {
             callback(400, {errors: err});
         }
