@@ -52,61 +52,39 @@ handler.post = (request, callback) => {
 };
 
 // Users - get
-// Required fields: email
-// Optional data: none
-// TODO verify token
+// Required fields: none
+// Optional fields: none
 handler.get = (request, callback) => {
-    const rules = {
-        email: ['required','email'],
-    };
-    validationHelper.validate(rules, request.queryString, (err) => {
-        if (!err) {
-            _data.read('users', request.queryString.email).then(data => {
-                delete data.password;
-                callback(200, data);
-            }, err => {
-                callback(404);
-            })
-        } else {
-            callback(400, {errors: err});
-        }
+    validationHelper.authUser(request).then(user => {
+        callback(200, user);
+    }, err => {
+        callback(401, {errors: err});
     });
 };
 
 // Users - put
-// Required fields: email
+// Required fields: none
 // Optional fields: none
-handler.put = request => {
-    const rules = {
-        email: ['required','email'],
-    };
-    validationHelper.validate(rules, request.payload, (err) => {
-        if (!err) {
-            callback(200);
-        } else {
-            callback(400, {errors: err});
-        }
+handler.put = (request, callback) => {
+    validationHelper.authUser(request).then(user => {
+        callback(200, user);
+    }, err => {
+        callback(401, {errors: err});
     });
 };
 
 // Users - delete
-// Required fields: email
+// Required fields: none
 // Optional fields: none
-// TODO verify token
 handler.delete = (request, callback) => {
-    const rules = {
-        email: ['required','email'],
-    };
-    validationHelper.validate(rules, request.queryString, (err) => {
-        if (!err) {
-            _data.delete('users', request.queryString.email).then(res => {
-                callback(200);
-            }, err => {
-                callback(400, {'Error':'Could not find the specified user'});
-            })
-        } else {
+    validationHelper.authUser(request).then(user => {
+        _data.delete('users', user.email).then(res => {
+            callback(200);
+        }, err => {
             callback(400, {errors: err});
-        }
+        })
+    }, err => {
+        callback(401, {errors: err});
     });
 };
 
