@@ -6,11 +6,13 @@
 
 // Dependencies
 const _validator = require('../lib/validator');
+const _data = require("../lib/data");
 
 const helper = {};
 
 helper.validate = (rules, body, callback) => {
     const errors = [];
+    const types = ['string', 'number'];
     for (let attr in rules) {
         const attrRules = rules[attr];
         const inputValue = body.hasOwnProperty(attr) ? body[attr] : null;
@@ -21,6 +23,23 @@ helper.validate = (rules, body, callback) => {
         });
     }
     callback(errors.length > 0 ? errors : false);
+}
+
+helper.authUser = request => {
+    return new Promise(((resolve, reject) => {
+        const token = typeof(request.headers.token) == 'string' ? request.headers.token : false;
+        _data.read('tokens', token).then(data => {
+            const email = data.email;
+            _data.read('users', email).then(user => {
+                delete user.hashedPassword;
+                resolve(user);
+            }, err => {
+                reject(err);
+            })
+        }, err => {
+            reject(err);
+        });
+    }));
 }
 
 module.exports = helper;

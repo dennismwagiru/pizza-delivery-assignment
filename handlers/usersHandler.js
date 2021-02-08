@@ -38,7 +38,7 @@ handler.post = (request, callback) => {
                 'name': payload.name,
                 'email': payload.email,
                 'address': payload.address,
-                'password': hashedPassword
+                'hashedPassword': hashedPassword
             };
 
             // Store the user
