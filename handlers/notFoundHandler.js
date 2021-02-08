@@ -6,10 +6,8 @@
 
 const handler = {};
 
-handler.init = () => {
-    return new Promise((resolve, reject) => {
-        resolve(404);
-    });
+handler.init = (request, callback) => {
+    callback(404)
 };
 
 module.exports = handler;
