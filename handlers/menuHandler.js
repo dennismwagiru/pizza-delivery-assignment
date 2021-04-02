@@ -13,26 +13,30 @@ const handler = {};
 
 handler.init = (request, callback) => {
 
-        const acceptableMethods = ['get', 'post', 'put', 'delete'];
-        if (acceptableMethods.indexOf(request.method) > -1) {
-            handler[request.method](request, callback);
-        } else {
-            callback(405, 'Method not allowed');
-        }
+    const acceptableMethods = ['get', 'post', 'put', 'delete'];
+    if (acceptableMethods.indexOf(request.method) > -1) {
+        handler[request.method](request).then(payload => {
+            callback(200, payload)
+        }, err => {
+            callback(err.statusCode, err.payload);
+        });
+    } else {
+        callback(405, 'Method not allowed');
+    }
 };
 
 // Menu - post
 // Required fields: name, description, price
 // Optional fields: none
-handler.post = (request, callback) => {
-    const payload = request.payload;
-    const rules = {
-        name: ['required'],
-        description: ['required'],
-        price: ['required'] //TODO ADD number validation
-    };
-    validationHelper.validate(rules, payload, err => {
-        if (!err) {
+handler.post = (request) => {
+    return new Promise((resolve, reject) => {
+        const payload = request.payload;
+        const rules = {
+            name: ['required'],
+            description: ['required'],
+            price: ['required', 'number'] //TODO ADD number validation
+        };
+        validationHelper.validate(rules, payload).then(() => {
             const id = appHelper.uuidv4();
             const menuItemObject = {
                 'id': id,
@@ -43,33 +47,34 @@ handler.post = (request, callback) => {
 
             // Store the menu item
             _data.create('menu', id, menuItemObject).then(() => {
-                callback(200);
-            }, () => callback(500, {'Error': 'An item with that id already exists'}))
-        } else {
-            callback(400, {errors: err})
-        }
+                resolve();
+            }, () => reject({ statusCode: 500, payload: { 'Error': 'An item with that id already exists' } }));
+        }, err => reject(err));
     })
 };
 
 // Menu - get
-// Required fields: id
-// Optional fields: none
-handler.get = (request, callback) => {
-    const rules = {
-        id: ['required']
-    };
-    validationHelper.validate(rules, request.queryString, err => {
-        console.log(callback);
-        if (!err) {
+// Required fields: none
+// Optional fields: id
+handler.get = (request) => {
+    return new Promise((resolve, reject) => {
+        const id = typeof(request.queryString.id) == 'string' && request.queryString.id.trim().length > 0 ? request.queryString.id : false;
+        // If id exists and is valid find and return requested item
+        if (id) {
             _data.read('menu', request.queryString.id).then(data => {
-                callback(200, data);
+                resolve(data);
             }, err => {
-                callback(404)
-            })
+                reject({statusCode: 404, payload: {'Error': 'Menu Item not found'}});
+            });
         } else {
-            callback(400, {errors: err});
+            // Else return entire menu.
+           _data.asArray('menu').then(list => {
+               resolve(list);
+           }, err => {
+               reject({statusCode: 400, payload: {'Error': 'Unable to read menu list.'} });
+           });
         }
-    })
+    });
 };
 
 // Menu - list
@@ -78,41 +83,45 @@ handler.get = (request, callback) => {
 // Menu - put
 // Required fields: id
 // Optional fields: name, description, price (At least one must be selected)
-handler.put = (request, callback) => {
-    //TODO Add validation for optional parameters
-    const rules = {
-        id: ['required']
-    };
-    validationHelper.validate(rules, request.payload, err => {
-        if (!err) {
-            callback(200)
-        } else {
-            callback(400, {errors: err});
-        }
-    })
+handler.put = (request) => {
     return new Promise((resolve, reject) => {
-        resolve(200);
-    });
+        let rules = {
+            id: ['required']
+        };
+        validationHelper.validate(rules, request.queryString).then(() => {
+            rules = {
+                price: ['number'],
+            }
+            validationHelper.validate(rules, request.payload).then(() => {
+                _data.read('menu', request.queryString.id).then(item => {
+                    item.name = request.payload.name ?? item.name;
+                    item.description = request.payload.description ?? item.description;
+                    item.price = request.payload.price ?? item.price;
+                    _data.update('menu', request.queryString.id, item).then(() => {
+                        resolve()
+                    }, err => reject({ statusCode: 500, payload: { 'Error': 'Could not updated item.' }}))
+                }, err => reject({ statusCode: 404, payload: {'Error': 'Specified item does not exist.' } }));
+            }, err => reject(err))
+        }, err => reject(err));
+    })
 };
 
 // Menu - delete
 // Required fields: id
 // Optional fields: none
-handler.delete = (request, callback) => {
-    const rules = {
-        id: ['required']
-    };
-    validationHelper.validate(rules, request.queryString, err => {
-        if (!err) {
+handler.delete = (request) => {
+    return new Promise((resolve, reject) => {
+        const rules = {
+            id: ['required']
+        };
+        validationHelper.validate(rules, request.queryString).then(() => {
             _data.delete('menu', request.queryString.id).then(() => {
-                callback(200);
+                resolve(200);
             }, err => {
-                callback(400, {'Error': 'Could not find the specified item'});
-            })
-        } else {
-            callback(400, {errors: err});
-        }
-    })
+                reject({ statusCode: 400, payload: { 'Error': 'Could not find the specified item' } });
+            });
+        }, err => reject(err));
+    });
 };
 
 module.exports = handler;

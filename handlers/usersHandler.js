@@ -85,7 +85,9 @@ handler.get = (request) => {
 handler.put = (request) => {
     return new Promise((resolve, reject) => {
         const queryString = request.queryString;
-        const rules = {email: ['required', 'email']};
+        let rules = {
+            email: ['required', 'email']
+        };
         validationHelper.validate(rules, queryString).then(() => {
             const token = typeof (request.headers.token) == 'string' ? request.headers.token : false
             validationHelper.isTokenValid(token, queryString.email).then(() => {

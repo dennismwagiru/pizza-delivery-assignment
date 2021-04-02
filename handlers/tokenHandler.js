@@ -123,10 +123,4 @@ handler.delete = request => {
     });
 };
 
-handler.isValid = (token, phone) => {
-    return new Promise((resolve, reject) => {
-
-    });
-}
-
 module.exports = handler;
