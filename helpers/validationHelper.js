@@ -41,4 +41,38 @@ helper.isTokenValid = (token, email) => {
    })
 }
 
+helper.isLoggedIn = token => {
+    return new Promise((resolve, reject) => {
+        _data.read('tokens', token).then(tokenData => {
+            if (tokenData.expires > Date.now()) {
+                resolve();
+            } else {
+                reject({ statusCode: 403, payload: {'Error': 'Missing required token in header, or token is invalid' } });
+            }
+        }, () => {
+            reject({ statusCode: 403, payload: {'Error': 'Missing required token in header, or token is invalid' } });
+        });
+    })
+}
+
+helper.isAdmin = token => {
+    return new Promise((resolve, reject) => {
+        _data.read('tokens', token).then(tokenData => {
+            if (tokenData.expires > Date.now()) {
+                _data.read('users', tokenData.email).then(user => {
+                    if (user?.isAdmin)
+                        resolve();
+                    else {
+                        reject({ statusCode: 403, payload: { 'Error': 'Permission Denied' } });
+                    }
+                }, err => reject({ statusCode: 403, payload: {'Error': 'Authenticated user does not exist.'} }))
+            } else {
+                reject({ statusCode: 403, payload: {'Error': 'Missing required token in header, or token is invalid' } });
+            }
+        }, () => {
+            reject({ statusCode: 403, payload: {'Error': 'Missing required token in header, or token is invalid' } });
+        });
+    })
+}
+
 module.exports = helper;

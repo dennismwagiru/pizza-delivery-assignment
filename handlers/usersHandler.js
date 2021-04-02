@@ -91,20 +91,26 @@ handler.put = (request) => {
         validationHelper.validate(rules, queryString).then(() => {
             const token = typeof (request.headers.token) == 'string' ? request.headers.token : false
             validationHelper.isTokenValid(token, queryString.email).then(() => {
+                rules = {
+                    isAdmin: ['boolean']
+                }
                 const payload = request.payload;
-                const password = typeof(payload.password) == 'string' && payload.password.trim().length > 0 ? payload.password.trim() : false;
-                _data.read('users', queryString.email).then(userData => {
-                    userData.name = payload.name ?? userData.name;
-                    userData.address = payload.address ?? userData.address;
-                    if (password)
-                        userData.hashedPassword = appHelper.hash(password)
-                    _data.update('users', queryString.email, userData).then(() => {
-                        resolve('s')
-                    }, err => {
-                        console.log(err);
-                        reject({ statusCode: 500, payload: { 'Error': 'Could not update the user.' } });
-                    })
-                }, err => reject({ statusCode: 400, payload: { 'Error': 'Specified user does not exist' } }));
+                validationHelper.validate(rules, request.payload).then(() => {
+                    const password = typeof(payload.password) == 'string' && payload.password.trim().length > 0 ? payload.password.trim() : false;
+                    _data.read('users', queryString.email).then(userData => {
+                        userData.name = payload.name ?? userData.name;
+                        userData.address = payload.address ?? userData.address;
+                        userData.isAdmin = payload.isAdmin ?? userData.isAdmin ?? false;
+                        if (password)
+                            userData.hashedPassword = appHelper.hash(password)
+                        _data.update('users', queryString.email, userData).then(() => {
+                            resolve('s')
+                        }, err => {
+                            console.log(err);
+                            reject({ statusCode: 500, payload: { 'Error': 'Could not update the user.' } });
+                        })
+                    }, err => reject({ statusCode: 400, payload: { 'Error': 'Specified user does not exist' } }));
+                }, err => reject(err));
             }, err => reject(err));
         }, err => reject(err));
     });
