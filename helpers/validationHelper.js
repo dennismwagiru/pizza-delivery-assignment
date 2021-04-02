@@ -10,36 +10,35 @@ const _data = require("../lib/data");
 
 const helper = {};
 
-helper.validate = (rules, body, callback) => {
-    const errors = [];
-    const types = ['string', 'number'];
-    for (let attr in rules) {
-        const attrRules = rules[attr];
-        const inputValue = body.hasOwnProperty(attr) ? body[attr] : null;
-        attrRules.forEach(rule => {
-            _validator._rules[rule](attr, inputValue, (err) => {
-                if (err) errors.push(err);
+helper.validate = (rules, body) => {
+    return new Promise((resolve, reject) => {
+        const errors = [];
+        for (let attr in rules) {
+            const attrRules = rules[attr];
+            const inputValue = body.hasOwnProperty(attr) ? body[attr] : null;
+            attrRules.forEach(rule => {
+                _validator._rules[rule](attr, inputValue, (err) => {
+                    if (err) errors.push(err);
+                });
             });
-        });
-    }
-    callback(errors.length > 0 ? errors : false);
+        }
+        if (errors.length > 0) reject({ statusCode: 400, payload: errors});
+        else resolve();
+    })
 }
 
-helper.authUser = request => {
-    return new Promise(((resolve, reject) => {
-        const token = typeof(request.headers.token) == 'string' ? request.headers.token : false;
-        _data.read('tokens', token).then(data => {
-            const email = data.email;
-            _data.read('users', email).then(user => {
-                delete user.hashedPassword;
-                resolve(user);
-            }, err => {
-                reject(err);
-            })
-        }, err => {
-            reject(err);
-        });
-    }));
+helper.isTokenValid = (token, email) => {
+   return new Promise((resolve, reject) => {
+       _data.read('tokens', token).then(tokenData => {
+           if (tokenData.email === email && tokenData.expires > Date.now()) {
+               resolve();
+           } else {
+               reject({ statusCode: 403, payload: {'Error': 'Missing required token in header, or token is invalid' } });
+           }
+       }, () => {
+           reject({ statusCode: 403, payload: {'Error': 'Missing required token in header, or token is invalid' } });
+       });
+   })
 }
 
 module.exports = helper;
